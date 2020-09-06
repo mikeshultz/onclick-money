@@ -10,15 +10,24 @@ import "./lib/openzeppelin/contracts/access/Ownable.sol";
 import "./lib/openzeppelin/contracts/token/ERC777/ERC777.sol";
 
 contract ClickToken is Ownable, ERC777 {
-    event SignerAdded(address signer);
+    event SignerApproved(address signer, uint256 allowance);
     event SignerRemoved(address signer);
 
     // The accounts that have the right sign claims
-    mapping(address => bool) public signers;
+    mapping(address => uint256) public signers;
 
-    constructor(address _claimSigner, uint256 initialSupply) ERC777("ClickToken", "CLK", new address[](0)) public {
+    // Previous claims
+    mapping(bytes32 => bool) public claims;
+
+    constructor(
+        address signer,
+        uint256 signerAllowance,
+        uint256 initialSupply
+    ) ERC777("ClickToken", "CLK", new address[](0))
+        public
+    {
         // mint for owner because he's cool
-        addSigner(_claimSigner);
+        grantSigner(signer, signerAllowance);
 
         // Mint an initialsupply
         bytes memory zero = new bytes(0);
@@ -119,17 +128,17 @@ contract ClickToken is Ownable, ERC777 {
      * @return If the given address is an authorized signer
      */
     function isSigner(address signer) public view returns (bool) {
-        return signers[signer] == true;
+        return signers[signer] > uint256(0);
     }
 
     /**
      * @dev Add an account that's authorized to sign claims
      * @param signer address of signer account to add
      */
-    function addSigner(address signer) public onlyOwner
+    function grantSigner(address signer, uint256 allowance) public onlyOwner
     {
-        signers[signer] = true;
-        emit SignerAdded(signer);
+        signers[signer] += allowance;
+        emit SignerApproved(signer, allowance);
     }
 
     /**
@@ -138,26 +147,21 @@ contract ClickToken is Ownable, ERC777 {
      */
     function removeSigner(address signer) public onlyOwner
     {
-        signers[signer] = false;
+        signers[signer] = uint256(0);
         emit SignerRemoved(signer);
     }
 
     /**
      * @dev Check a claim and return signing account
-     * @param recipient of claim
-     * @param uid of claim
-     * @param amount of claim
+     * @param claimHash hash of the claim
      * @param signature of claim
      * @return address of the signer
      */
     function checkClaim(
-        address recipient,
-        bytes32 uid,
-        uint256 amount,
+        bytes32 claimHash,
         bytes memory signature
-    ) public view returns (address)
+    ) public pure returns (address)
     {
-        bytes32 claimHash = hashClaim(recipient, uid, amount);
         bytes32 prefixedHash = prefixHash(claimHash);
         return recoverSigner(prefixedHash, signature);
     }
@@ -180,10 +184,23 @@ contract ClickToken is Ownable, ERC777 {
         bytes memory operatorData
     ) public
     {
-        // validate signature
-        address recovered = checkClaim(recipient, uid, amount, signature);
+        // Get the hash of to verify sig and dupe check
+        bytes32 claimHash = hashClaim(recipient, uid, amount);
 
-        require(signers[recovered], "invalid-signer");
+        // A claim can only be used once
+        require(!claims[claimHash], "already-claimed");
+
+        // validate signature
+        address recovered = checkClaim(claimHash, signature);
+
+        // Make sure the signer is approved
+        require(signers[recovered] >= amount, "invalid-signer");
+
+        // Set claim as used
+        claims[claimHash] = true;
+
+        // Reduce signer allowance
+        signers[recovered] -= amount;
 
         // if valid, mint amount
         _mint(recipient, amount, userData, operatorData);

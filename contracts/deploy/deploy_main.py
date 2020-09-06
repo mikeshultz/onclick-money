@@ -4,6 +4,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from const import (
+    ONE_ETH,
     ERC1820_DEPLOYER_ADDRESS,
     ERC1820_REGISTRY_ADDRESS,
     ERC1820_REGISTRY_DEPLOY_TX,
@@ -63,7 +64,8 @@ def main(contracts, deployer_account, web3, network):
     ClickToken = contracts.get('ClickToken')
 
     instance = ClickToken.deployed(
-        _claimSigner=deployer_account,
+        signer=deployer_account,
+        signerAllowance=ONE_ETH * 100000,  # 100k tokens
         initialSupply=initial_supply
     )
 

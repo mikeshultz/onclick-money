@@ -1,3 +1,4 @@
+ONE_ETH = int(1e18)
 # Taken from: https://github.com/OpenZeppelin/openzeppelin-test-helpers/blob/master/src/data.js#L214
 ERC1820_DEPLOYER_ADDRESS = '0xa990077c3205cbDf861e17Fa532eeB069cE9fF96'
 ERC1820_REGISTRY_ADDRESS = '0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24'
