@@ -1,0 +1,8 @@
+{
+  "contracts": [
+    {
+      "name": "ClickToken",
+      "networks": {}
+    }
+  ]
+}
