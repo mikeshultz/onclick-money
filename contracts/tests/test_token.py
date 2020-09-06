@@ -187,6 +187,9 @@ def test_token_claims(web3, contracts, std_tx):
     charlie_balance_first = clickToken.functions.balanceOf(charlie).call()
     assert charlie_balance_original + claim1['amount'] == charlie_balance_first
 
+    # Make sure the signer allowance went down
+    assert (ONE_ETH * 10) - claim1['amount'] == clickToken.functions.signers(signer).call()
+
 
 def test_token_claims(web3, contracts, std_tx):
     """ Test the claim mechanism """
