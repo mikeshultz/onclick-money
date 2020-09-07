@@ -23,7 +23,7 @@ contract ClickToken is Ownable, ERC777 {
         address signer,
         uint256 signerAllowance,
         uint256 initialSupply
-    ) ERC777("ClickToken", "CLK", new address[](0))
+    ) ERC777("ClickToken", "CLIK", new address[](0))
         public
     {
         // mint for owner because he's cool
