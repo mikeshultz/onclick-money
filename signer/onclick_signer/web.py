@@ -1,23 +1,34 @@
 import re
+import os
 import json
 import redis
 import tornado.web
+import logging
+from pathlib import Path
 from datetime import datetime, timedelta
 from secrets import token_hex
-from eth_utils.hexadecimal import remove_0x_prefix
+from eth_account import Account
+from eth_account.messages import defunct_hash_message
+from eth_utils.address import is_address
+from eth_utils.hexadecimal import add_0x_prefix, remove_0x_prefix
+from web3 import Web3
+
+#from onclick_signer.account import create_account
+# TODO: Move this to a separate package?
+from solidbyte.accounts import Accounts
 
 TOKEN_BYTES = 32
 HEX_PATTERN = r'^(0x)?([A-Fa-f0-9]{64})$'
 MIN_CLICK_DURATION = timedelta(milliseconds=500)
+KEYSTORE_DIR = Path('~/.ethereum/keystore').expanduser().resolve()
 
 _cached_redis = None
 # in-memory click tracking
 _last_click = dict()
 _token_lock = dict()
 
-def log(msg):
-    # TODO: replace with proper logging
-    print('### {}'.format(msg))
+log = logging.getLogger().getChild('web')
+log.setLevel('DEBUG')
 
 def get_redis():
     global _cached_redis
@@ -42,21 +53,32 @@ def rgetint(r, key, default):
         return int(v)
     return int(default)
 
-class MainHandler(tornado.web.RequestHandler):
+def create_claim(recipient, uid, amount, contract_address):
+    return Web3.soliditySha3(
+        ['address', 'bytes32', 'uint256', 'address'],
+        [recipient, uid, amount, contract_address]
+    )
+
+
+class JSONRequestHandler(tornado.web.RequestHandler):
+    def set_default_headers(self, *args, **kwargs):
+        # TODO: Should we care about CORS Origin?
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
+        self.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+
     def write_json(self, v):
         self.write(json.dumps(v))
 
+class MainHandler(JSONRequestHandler):
     def get(self):
         self.write_json({
             'success': True
         })
 
-class ClicksHandler(tornado.web.RequestHandler):
+class ClicksHandler(JSONRequestHandler):
     def initialize(self):
         self.redis = get_redis()
-
-    def write_json(self, v):
-        self.write(json.dumps(v))
 
     def get(self, token):
         clicks = rgetint(self.redis, token, 0)
@@ -66,18 +88,16 @@ class ClicksHandler(tornado.web.RequestHandler):
             'clicks': clicks
         })
 
-class ClickHandler(tornado.web.RequestHandler):
+class ClickHandler(JSONRequestHandler):
     def initialize(self):
         self.redis = get_redis()
-
-    def write_json(self, v):
-        self.write(json.dumps(v))
 
     def post(self):
         """ Handle POST request """
 
         if not self.request.body:
-            log('Missing body')
+            log.warn('Missing body')
+            self.set_status(400)
             self.write_json({
                 'success': False,
                 'clicks': None,
@@ -93,7 +113,7 @@ class ClickHandler(tornado.web.RequestHandler):
         # No concurrent requests
         if token is not None:
             if _token_lock.get(token):
-                log('Token locked: {}'.format(token))
+                log.warn('Token locked: {}'.format(token))
                 self.write_json({
                     'success': False,
                     'clicks': None,
@@ -112,7 +132,7 @@ class ClickHandler(tornado.web.RequestHandler):
                 _last_click.get(token)
                 and now - _last_click[token] < MIN_CLICK_DURATION
             ):
-                log('Clicking too often')
+                log.warn('Clicking too often')
 
                 self.set_status(429)
                 self.write_json({
@@ -126,13 +146,13 @@ class ClickHandler(tornado.web.RequestHandler):
 
                 return
         elif token is not None:
-            log('ERROR: Given token is invalid: {}'.format(token))
+            log.error('ERROR: Given token is invalid: {}'.format(token))
         
         # Generate token if needed
         if token is None or clicks == 0:
             token = token_hex(TOKEN_BYTES)
 
-            log('Created token: {}'.format(token))
+            log.warn('Created token: {}'.format(token))
 
         # Increment clicks
         clicks += 1
@@ -148,9 +168,124 @@ class ClickHandler(tornado.web.RequestHandler):
             'token': token,
         })
 
+class ClaimHandler(JSONRequestHandler):
+    def initialize(self):
+        self.redis = get_redis()
+        self.accounts = Accounts(keystore_dir=os.environ.get('ETHEREUM_KEYSTORE'))
+
+        stored_accounts = self.accounts.get_accounts()
+        passphrase = os.environ.get('ENCRYPTION_PASSPHRASE')
+        account = None
+
+        if not passphrase:
+            raise ValueError('ENCRYPTION_PASSPHRASE must be defined')
+
+        if not stored_accounts:
+            account_obj = self.accounts.create_account(passphrase)
+            account = account_obj.get('address')
+        elif len(stored_accounts) > 1:
+            raise NotImplementedError('TODO: Support multiple accounts in keystore...')
+        else:
+            account = stored_accounts[0].address
+
+        log.info('Using account {} as signer'.format(account))
+
+        privkey = self.accounts.unlock(account, passphrase)
+        self.signer_account_privkey = privkey
+        self.signer_account_address = account
+
+    def post(self):
+        """ Handle POST request """
+
+        if not self.request.body:
+            log('Missing body')
+            self.set_status(400)
+            self.write_json({
+                'success': False,
+                'clicks': None,
+                'token': '',
+            })
+            return
+
+        req = json.loads(self.request.body)
+        token = req.get('token')
+        recipient = req.get('recipient')
+        contract = req.get('contract')
+
+        invalids = []
+        if not is_valid_token(token):
+            invalids.append('token')
+        if not is_address(recipient):
+            invalids.append('recipient')
+        if not is_address(contract):
+            invalids.append('contract')
+
+        if len(invalids) > 0:
+            log.warn('Invalid input: {}'.format(', '.join(invalids)))
+
+            self.set_status(400)
+            self.write_json({
+                'success': False,
+                'clicks': None,
+                'token': '',
+                'message': 'Invalid input'
+            })
+            return
+
+        # Verify it exists
+        clicks = rgetint(self.redis, token, 0)
+
+        if not clicks:
+            log.warn('Token has no clicks')
+            self.write_json({
+                'success': False,
+                'clicks': None,
+                'token': token,
+                'message': 'Try clicking first'
+            })
+            return
+
+        log.info('create_claim({}, {}, {}, {})'.format(
+            recipient,
+            add_0x_prefix(token),
+            clicks * int(1e18),
+            contract
+        ))
+
+        # Assemble claim
+        claim = create_claim(
+            recipient,
+            add_0x_prefix(token),
+            clicks * int(1e18),
+            contract
+        )
+        prefixed_claim_hash = defunct_hash_message(claim)
+        # Docstring for this function sugests this does not prefix messages, so
+        # we're prefixing above
+        signed = self.accounts.eth_account.signHash(
+            prefixed_claim_hash,
+            self.signer_account_privkey
+        )
+        print('signed:', signed)
+
+        signature = signed.get('signature', '')
+
+        print('signature:', signature)
+        print('signature:', dir(signature))
+
+        self.write_json({
+            'success': True,
+            'clicks': clicks,
+            'token': token,
+            'claim': claim.hex(),
+            'signature': signature.hex(),
+            'contract': contract,
+        })
+
 def make_app():
     return tornado.web.Application([
         (r"/", MainHandler),
+        (r"/claim", ClaimHandler),
         (r"/click", ClickHandler),
         (r"/clicks/([A-Fa-f0-9]+)", ClicksHandler),
     ])
