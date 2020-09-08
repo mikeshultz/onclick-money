@@ -1,5 +1,5 @@
 import React from 'react'
-import { DEFAULT_NETWORK, NETWORKS } from '../utils/web3'
+import { DEFAULT_NETWORK, NETWORKS } from '../utils/eth'
 
 import './NetworkSelector.css'
 

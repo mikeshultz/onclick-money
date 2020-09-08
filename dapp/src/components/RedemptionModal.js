@@ -2,7 +2,7 @@ import React from 'react'
 import AccountSelector from './AccountSelector'
 import { truncateToken } from '../utils/hex'
 import { getClaim, combineClaim } from '../utils/claim'
-import { NETWORKS, NET_BY_CONTRACT } from '../utils/web3'
+import { NETWORKS, NET_BY_CONTRACT } from '../utils/eth'
 
 import './RedemptionModal.css'
 

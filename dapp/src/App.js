@@ -7,7 +7,7 @@ import Footer from './components/Footer'
 import FAQModal from './components/FAQModal'
 import RedemptionModal from './components/RedemptionModal'
 import { getClicks, sendClick } from './utils/clicks'
-import { DEFAULT_NETWORK, NETWORKS, CONTRACTS } from './utils/web3'
+import { DEFAULT_NETWORK, NETWORKS, CONTRACTS } from './utils/eth'
 
 import 'App.css'
 
