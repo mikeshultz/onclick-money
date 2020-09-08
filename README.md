@@ -2,7 +2,8 @@
 
 ## Contracts
 
-The `contracts/` subfolder is a [Solidbyte](https://solidbyte.org) project.
+The `contracts/` subfolder is a [Solidbyte](https://solidbyte.org) project that
+contains the smart contracts for the CLIK token.
 
 ## Dapp
 
