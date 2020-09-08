@@ -1,0 +1,152 @@
+html {
+    background-color: #BEBEBE;
+}
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    font-size: 1rem;
+}
+
+button {
+    cursor: pointer;
+    background: #00357F;
+    color: #C7DDFC;
+    border: 0 #54BF66 solid;
+}
+
+button:focus { outline-color: #7EBE89; }
+
+button:active {
+    color: #00357F;
+    background: #C7DDFC;
+}
+
+.button-group {}
+.button-group button {
+    margin-right: 1rem;
+}
+
+a,
+a:link,
+a:visited,
+a:active {
+    color: #00357F;
+}
+
+.hide {
+    display: none;
+}
+
+.header-pad {
+    /*margin-top: 2rem;*/
+    margin-top: calc(100vh / 3);
+}
+
+.app-container {
+    text-align: center;
+}
+
+.modal-container {
+    background: rgba(50, 50, 50, 0.5);
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+.modal {
+    margin: 0 auto;
+    background: #fff;
+    height: 100%;
+    min-width: 500px;
+    max-width: 75%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    text-align: left;
+    padding: 1rem;
+}
+
+.disclaimer {
+    font-size: 75%;
+    font-color: #7B7B7B;
+}
+
+/*
+ * Original loader by Luke Haas, from https://projects.lukehaas.me/css-loaders/
+ */
+.loader-small {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.25rem auto;
+}
+.loader.loader-large {
+  width: 3rem;
+  height: 3rem;
+  margin: 1rem auto;
+}
+.loader {
+  font-size: 10px;
+  text-indent: -9999em;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #ffffff;
+  background: -moz-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+  background: -webkit-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+  background: -o-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+  background: -ms-linear-gradient(left, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+  background: linear-gradient(to right, #ffffff 10%, rgba(255, 255, 255, 0) 42%);
+  position: relative;
+  -webkit-animation: load3 1.4s infinite linear;
+  animation: load3 1.4s infinite linear;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+}
+.loader:before {
+  width: 50%;
+  height: 50%;
+  background: #ffffff;
+  border-radius: 100% 0 0 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  content: '';
+}
+.loader:after {
+  background: #00357F;
+  width: 75%;
+  height: 75%;
+  border-radius: 50%;
+  content: '';
+  margin: auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+@-webkit-keyframes load3 {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+@keyframes load3 {
+  0% {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}

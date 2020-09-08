@@ -1,0 +1,9 @@
+.faq-modal dl {
+}
+.faq-modal dl dt {
+    font-size: 125%;
+    font-weight: bold;
+}
+.faq-modal dl dd {
+    margin: 2rem 0;
+}

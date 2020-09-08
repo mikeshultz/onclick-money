@@ -1,0 +1,38 @@
+.redemption-modal {}
+
+.redemption-modal button.generate-claim {
+    height: 3rem;
+    width: 12rem;
+    border-radius: 1rem;
+}
+
+.redemption-modal table.claims {
+    width: 100%;
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+.redemption-modal table.claims td {
+    padding: 0.5rem;
+}
+.redemption-modal table.claims thead {}
+.redemption-modal table.claims thead tr {}
+.redemption-modal table.claims thead tr td {
+    border-bottom: 1px #000 solid;
+}
+.redemption-modal table.claims tbody tr {}
+.redemption-modal table.claims tbody tr td {
+    font-size: 1.75rem;
+}
+.redemption-modal table.claims tbody tr td button {
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    height: 2.5rem;
+    line-height: 1rem;
+}
+
+.redemption-modal table.claims tbody tr.claim-display {}
+.redemption-modal table.claims tbody tr.claim-display td {
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    font-size: 1rem;
+}

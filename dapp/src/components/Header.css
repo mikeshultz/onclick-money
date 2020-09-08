@@ -1,0 +1,30 @@
+.header {
+    margin: 0 auto;
+    height: 2rem;
+    width: 100%;
+    display: block;
+    background: #fff;
+    padding: 0;
+}
+
+.header .brand,
+.header .network-selector select {
+    line-height: 1.8rem;
+    height: 2rem;
+}
+
+.header .brand {
+    float: left;
+    /*display: inline-block;*/
+    display: none;
+}
+
+.header .brand {
+    font-weight: bold;
+    font-family: sans-serif;
+    color: #999999;
+}
+
+.header .network-selector {
+    float: right;
+}

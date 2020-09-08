@@ -1,0 +1,23 @@
+.account-selector {}
+.account-selector .form-field {
+    margin: 1rem 0;
+}
+.account-selector input,
+.account-selector select {
+    height: 2.5rem;
+    line-height: 1.75rem;
+    font-size: 1.75rem;
+    font-weight: 200;
+    padding: 0 0.5rem;
+    width: 45rem;
+}
+
+input.good {
+    border: 2px #7EBE89 solid;
+}
+
+.warning {
+    color: #EFB45F;
+    font-size: 75%;
+    font-weight: bold;
+}
