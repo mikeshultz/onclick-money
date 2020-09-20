@@ -20,7 +20,10 @@ from solidbyte.accounts import Accounts
 TOKEN_BYTES = 32
 HEX_PATTERN = r'^(0x)?([A-Fa-f0-9]{64})$'
 MIN_CLICK_DURATION = timedelta(milliseconds=500)
-KEYSTORE_DIR = Path('~/.ethereum/keystore').expanduser().resolve()
+KEYSTORE_DIR = Path(
+    os.environ.get('ETHEREUM_KEYSTORE', '~/.ethereum/keystore')
+).expanduser().resolve()
+ENCRYPTION_PASSPHRASE = os.environ.get('ENCRYPTION_PASSPHRASE')
 
 _cached_redis = None
 # in-memory click tracking
@@ -54,7 +57,7 @@ def rgetint(r, key, default):
     return int(default)
 
 def create_claim(recipient, uid, amount, contract_address):
-    return Web3.soliditySha3(
+    return Web3.solidityKeccak(
         ['address', 'bytes32', 'uint256', 'address'],
         [recipient, uid, amount, contract_address]
     )
@@ -96,7 +99,7 @@ class ClickHandler(JSONRequestHandler):
         """ Handle POST request """
 
         if not self.request.body:
-            log.warn('Missing body')
+            log.warning('Missing body')
             self.set_status(400)
             self.write_json({
                 'success': False,
@@ -111,9 +114,9 @@ class ClickHandler(JSONRequestHandler):
         clicks = 0
 
         # No concurrent requests
-        if token is not None:
+        if not token:
             if _token_lock.get(token):
-                log.warn('Token locked: {}'.format(token))
+                log.warning('Token locked: {}'.format(token))
                 self.write_json({
                     'success': False,
                     'clicks': None,
@@ -128,11 +131,18 @@ class ClickHandler(JSONRequestHandler):
             # Verify it exists
             clicks = rgetint(self.redis, token, 0)
 
+            # Rate limiting by both token and IP address
             if (
-                _last_click.get(token)
-                and now - _last_click[token] < MIN_CLICK_DURATION
+                (
+                    _last_click.get(token)
+                    and now - _last_click[token] < MIN_CLICK_DURATION
+                )
+                or (
+                    _last_click.get(self.request.remote_ip)
+                    and now - _last_click[self.request.remote_ip] < MIN_CLICK_DURATION
+                )
             ):
-                log.warn('Clicking too often')
+                log.warning('Clicking too often')
 
                 self.set_status(429)
                 self.write_json({
@@ -148,19 +158,27 @@ class ClickHandler(JSONRequestHandler):
         elif token is not None:
             log.error('ERROR: Given token is invalid: {}'.format(token))
         
-        # Generate token if needed
+        # Generate token if needed, do not just accept what's given
         if token is None or clicks == 0:
+            if token is not None:
+                # Unlock the bad token
+                _token_lock[token] = False
+
+            # Recreate the token to send back to the client
             token = token_hex(TOKEN_BYTES)
 
-            log.warn('Created token: {}'.format(token))
+            log.warning('Created token: {}'.format(token))
 
         # Increment clicks
         clicks += 1
         self.redis.incr(token)
         _last_click[token] = now
+        _last_click[self.request.remote_ip] = now
 
         # Unlock token
         _token_lock[token] = False
+
+        log.info('Clicked.')
 
         self.write_json({
             'success': True,
@@ -174,15 +192,14 @@ class ClaimHandler(JSONRequestHandler):
         self.accounts = Accounts(keystore_dir=os.environ.get('ETHEREUM_KEYSTORE'))
 
         stored_accounts = self.accounts.get_accounts()
-        passphrase = os.environ.get('ENCRYPTION_PASSPHRASE')
+        passphrase = ENCRYPTION_PASSPHRASE
         account = None
 
         if not passphrase:
             raise ValueError('ENCRYPTION_PASSPHRASE must be defined')
 
         if not stored_accounts:
-            account_obj = self.accounts.create_account(passphrase)
-            account = account_obj.get('address')
+            account = self.accounts.create_account(passphrase)
         elif len(stored_accounts) > 1:
             raise NotImplementedError('TODO: Support multiple accounts in keystore...')
         else:
@@ -198,7 +215,7 @@ class ClaimHandler(JSONRequestHandler):
         """ Handle POST request """
 
         if not self.request.body:
-            log('Missing body')
+            log.warning('Missing body')
             self.set_status(400)
             self.write_json({
                 'success': False,
@@ -215,13 +232,16 @@ class ClaimHandler(JSONRequestHandler):
         invalids = []
         if not is_valid_token(token):
             invalids.append('token')
-        if not is_address(recipient):
+        if not recipient or not is_address(recipient):
             invalids.append('recipient')
-        if not is_address(contract):
+        if not contract or not is_address(contract):
             invalids.append('contract')
 
+        recipient = Web3.toChecksumAddress(recipient)
+        contract = Web3.toChecksumAddress(contract)
+
         if len(invalids) > 0:
-            log.warn('Invalid input: {}'.format(', '.join(invalids)))
+            log.warning('Invalid input: {}'.format(', '.join(invalids)))
 
             self.set_status(400)
             self.write_json({
@@ -236,7 +256,7 @@ class ClaimHandler(JSONRequestHandler):
         clicks = rgetint(self.redis, token, 0)
 
         if not clicks:
-            log.warn('Token has no clicks')
+            log.warning('Token has no clicks')
             self.write_json({
                 'success': False,
                 'clicks': None,
@@ -266,19 +286,13 @@ class ClaimHandler(JSONRequestHandler):
             prefixed_claim_hash,
             self.signer_account_privkey
         )
-        print('signed:', signed)
-
-        signature = signed.get('signature', '')
-
-        print('signature:', signature)
-        print('signature:', dir(signature))
 
         self.write_json({
             'success': True,
             'clicks': clicks,
             'token': token,
             'claim': claim.hex(),
-            'signature': signature.hex(),
+            'signature': signed.signature.hex(),
             'contract': contract,
         })
 
