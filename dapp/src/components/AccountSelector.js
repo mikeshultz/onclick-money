@@ -52,26 +52,32 @@ const AccountSelector = (props) => {
 
   return (
     <div className="account-selector">
-      <div className="form-field">
-        <label htmlFor="manual">Account:</label>
-        <select name="select" onChange={selectChange}>
-          <option key="-" value="-">Select an Account</option>
-          {children}
-          <option key="manual" value="manual">Use another account</option>
-        </select>
-      </div>
+      {!!props.accounts && props.accounts.length === 1 ? (
+        <div className="selected-account">Claim for account: {props.accounts[0]}</div>
+      ) : (
+        <>
+          <div className="form-field">
+            <label htmlFor="manual">Account:</label>
+            <select name="select" onChange={selectChange}>
+              <option key="-" value="-">Select an Account</option>
+              {children}
+              <option key="manual" value="manual">Use another account</option>
+            </select>
+          </div>
 
-      <div className={`form-field ${showManual ? '' : 'hide'}`}>
-        <label htmlFor="manual">Address:</label>
-        <input
-          type="text"
-          name="manual"
-          className={manualGood ? 'good' : ''}
-          onChange={inputChange}
-          value={manualAddress}
-          />
-        <p className="form-help warning">{addressWarning}</p>
-      </div>
+          <div className={`form-field ${showManual ? '' : 'hide'}`}>
+            <label htmlFor="manual">Address:</label>
+            <input
+              type="text"
+              name="manual"
+              className={manualGood ? 'good' : ''}
+              onChange={inputChange}
+              value={manualAddress}
+              />
+            <p className="form-help warning">{addressWarning}</p>
+          </div>
+        </>
+      )}
     </div>
   )
 }

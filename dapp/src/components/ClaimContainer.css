@@ -1,0 +1,19 @@
+.packed-claim {
+    border: 1px #444444 dashed;
+    padding: 1rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+.copied {
+    background: #00357F;
+    color: #fff;
+    font-weight: bold;
+    position: relative;
+    top: -3rem;
+    left: 2rem;
+    padding: 0.5rem;
+    border-radius: 1rem;
+    display: block;
+    float: left;
+}

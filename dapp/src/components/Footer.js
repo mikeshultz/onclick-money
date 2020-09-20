@@ -9,7 +9,7 @@ const Footer = (props) => {
   return (
     <nav className="nav">
       <a className="nav-link" href="#" onClick={props.toggleFAQ}>FAQ</a>
-      <a className="nav-link" href="#" onClick={props.toggleFAQ}>Send saved claim</a>
+      <a className="nav-link" href="#" onClick={props.toggleRedemption}>Load saved claim</a>
       <a
         className="nav-link"
         href="https://github.com/mikeshultz/onclick-money"

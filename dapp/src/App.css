@@ -59,7 +59,6 @@ a:active {
 .modal {
     margin: 0 auto;
     background: #fff;
-    height: 100%;
     min-width: 500px;
     max-width: 75%;
     position: absolute;
@@ -67,7 +66,12 @@ a:active {
     right: 0;
     left: 0;
     text-align: left;
-    padding: 1rem;
+    padding: 3rem;
+
+    /* subtract padding and enable scroll for overflow */
+    height: calc(100vh - 6rem);
+    max-height: calc(100vh - 6rem);
+    overflow-y: scroll;
 }
 
 .disclaimer {

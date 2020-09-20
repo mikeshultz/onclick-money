@@ -1,3 +1,4 @@
+const { remove0xPrefix } = require('./hex')
 const { SIGNER_URL } = process.env
 
 export async function getClaim(token, recipient, contract) {
@@ -23,6 +24,18 @@ export async function getClaim(token, recipient, contract) {
   return await resp.json()
 }
 
-export function combineClaim(claimHash, signature) {
-  return `${claimHash}${signature.slice(2)}`
+function objectToBase64(o) {
+  return btoa(JSON.stringify(o))
+}
+
+function base64ToObject(b) {
+  return JSON.parse(atob(b))
+}
+
+export function packClaim({ token, claim, clicks, contract, signature }) {
+  return objectToBase64({ token, claim, clicks, contract, signature })
+}
+
+export function unpackClaim(packedClaim) {
+  return base64ToObject(packedClaim)
 }

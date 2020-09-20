@@ -1,6 +1,13 @@
 .redemption-modal {}
 
-.redemption-modal button.generate-claim {
+.redemption-modal textarea.claim-box {
+    width: 100%;
+    line-height: 1.25rem;
+    height: 5rem;
+}
+
+.redemption-modal button.generate-claim,
+.redemption-modal button.load-claim {
     height: 3rem;
     width: 12rem;
     border-radius: 1rem;

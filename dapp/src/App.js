@@ -1,4 +1,6 @@
 import React from 'react'
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import Header from './components/Header'
 import TokenButton from './components/TokenButton'
@@ -45,10 +47,12 @@ class App extends React.Component {
 
     this.click = this.click.bind(this)
     this.redeem = this.redeem.bind(this)
+    this.reset = this.reset.bind(this)
     this.toggleFAQ = this.toggleFAQ.bind(this)
     this.toggleRedemption = this.toggleRedemption.bind(this)
     this.changeNetwork = this.changeNetwork.bind(this)
     this.addClaim = this.addClaim.bind(this)
+    this.handleError = this.handleError.bind(this)
   }
 
   updateClicks() {
@@ -145,6 +149,19 @@ class App extends React.Component {
     localStorage.setItem(LOCAL_STORAGE_CLAIMS, JSON.stringify(claims))
   }
 
+  reset() {
+    this.setState({
+      clicks: 0,
+      token: null,
+    })
+    localStorage.setItem(LOCAL_STORAGE_TOKEN, '')
+  }
+
+  handleError(err) {
+    console.error(err)
+    toast(err.message)
+  }
+
   render() {
     return (
       <div className="app-container">
@@ -154,8 +171,9 @@ class App extends React.Component {
         <TokenBalance
           tokens={this.state.clicks}
           toggleRedemption={this.toggleRedemption}
+          claims={this.state.claims}
           />
-        <Footer toggleFAQ={this.toggleFAQ} />
+        <Footer toggleFAQ={this.toggleFAQ} toggleRedemption={this.toggleRedemption} />
 
         <FAQModal
           className={this.state.showFAQ ? '' : 'hide'}
@@ -170,7 +188,12 @@ class App extends React.Component {
           clicks={this.state.clicks}
           addClaim={this.addClaim}
           claims={this.state.claims}
+          handleError={this.handleError}
+          network={this.state.network}
+          reset={this.reset}
           />
+
+        <ToastContainer position="bottom-right" newestOnTop={true} />
       </div>
     )
   }
