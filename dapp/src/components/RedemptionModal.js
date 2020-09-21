@@ -1,9 +1,11 @@
 import React from 'react'
+import ethers from 'ethers'
 import AccountSelector from './AccountSelector'
 import ClaimContainer from './ClaimContainer'
 import { truncateToken, add0xPrefix } from '../utils/hex'
 import { getClaim, packClaim, unpackClaim } from '../utils/claim'
-import { NETWORKS, NET_BY_CONTRACT, getProvider } from '../utils/eth'
+import { NETWORKS, NET_BY_CONTRACT, CONTRACTS, VALUES, getProvider } from '../utils/eth'
+import { require } from '../utils/validation'
 
 import './RedemptionModal.css'
 
@@ -50,31 +52,92 @@ class RedemptionModal extends React.Component {
     })
   }
 
-  async sendClaim(recipient, token, amount, signature) {
+  async sendClaim(recipient, token, clicks, signature) {
     token = add0xPrefix(token)
 
+    require(recipient, "Missing recipient")
+    require(token, "Missing token")
+    require(clicks, "Missing clicks")
+    require(signature, "Missing signature")
+
+    const amount = VALUES.oneEther.mul(clicks)
+
+    console.log('recipient:', recipient)
+    console.log('token:', token)
+    console.log('amount:', amount)
+    console.log('signature:', signature)
+
+    const contractAddress = CONTRACTS[this.props.network]
+
+    console.log('contractAddress:', contractAddress)
+
+    const checkHash = ethers.utils.solidityKeccak256(
+      ['address', 'bytes32', 'uint256', 'address'],
+      [recipient, token, amount, contractAddress]
+    )
     // Try and validate the claim before sending a tx
+    console.log('ClickToken address: ', this.wallet.clickToken.address)
+    console.log('expected address: ', contractAddress)
     const hash = await this.wallet.clickToken.hashClaim(recipient, token, amount)
+    console.log('hash:', hash)
+    console.log('checkHash:', checkHash)
+
+    console.debug(`Hash verification: ${hash} === ${checkHash} === ${hash === checkHash}`)
+
+    if (hash !== checkHash) {
+      throw new Error(`Hash verificaiton failed!  ${hash} != ${checkHash}`)
+    }
+
     const recoveredSigner = await this.wallet.clickToken.checkClaim(hash, signature)
 
-    if (!recoveredSigner) {
+    console.debug(`Recovered signer: ${recoveredSigner}`)
+
+    //if (!recoveredSigner) {
+    if (recoveredSigner !== '0xc19FdD3ec293072eD78e7b2b25c4F9CD3d459a97') {
       throw new Error('Claim failed validation check.  Invalid signature?')
     }
 
     // claim(address,bytes32,uint256,bytes)
     const method = this.wallet.clickToken['claim(address,bytes32,uint256,bytes)']
-    const tx = await method(recipient, token, amount, signature)
+
+    let tx
+    try {
+      tx = await method(recipient, token, amount, signature)
+    } catch (err) {
+      let msg = err.toString()
+
+      // Not sure if this is just Metamask or what?
+      if (err.data && err.data.message) {
+        msg = err.data.message
+      }
+
+      if (msg.includes('already-claimed')) {
+        this.props.handleError(new Error('Claim already redeemed!'))
+        this.props.removeClaim(token)
+      } else {
+        console.error(err)
+        this.props.handleError(err)
+      }
+
+      return
+    }
+
+    // TODO: needs better UX
     const receipt = await tx.wait()
+    console.debug(tx)
+    console.debug(receipt)
     if (!receipt.status) {
-      console.debug(tx)
       throw new Error('Transaction failed!')
+    } else {
+      this.props.removeClaim(token)
     }
   }
 
   async connectWallet() {
     const provi = await getProvider(this.props.network)
     if (!provi.success) {
-      this.props.handleError(new Error(provi.error))
+      const e = new Error(provi.error ? provi.error : 'Error getting provider')
+      this.props.handleError(e)
     }
     this.wallet = provi
     this.setState({

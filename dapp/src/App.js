@@ -9,7 +9,8 @@ import Footer from './components/Footer'
 import FAQModal from './components/FAQModal'
 import RedemptionModal from './components/RedemptionModal'
 import { getClicks, sendClick } from './utils/clicks'
-import { DEFAULT_NETWORK, NETWORKS, CONTRACTS } from './utils/eth'
+import { DEFAULT_NETWORK, NETWORKS, CONTRACTS, getProvider } from './utils/eth'
+import { remove0xPrefix } from './utils/hex'
 
 import 'App.css'
 
@@ -36,6 +37,7 @@ class App extends React.Component {
       clicking: false,
       token: storedToken,
       clicks: 0,
+      tokenBalance: 0,
       showFAQ: false,
       showRedemption: false,
       claims: storedClaims ? JSON.parse(storedClaims) : {},
@@ -44,6 +46,7 @@ class App extends React.Component {
     console.log('loaded claims: ', this.state.claims)
 
     this.updateClicks()
+    this.updateBalance()
 
     this.click = this.click.bind(this)
     this.redeem = this.redeem.bind(this)
@@ -52,7 +55,9 @@ class App extends React.Component {
     this.toggleRedemption = this.toggleRedemption.bind(this)
     this.changeNetwork = this.changeNetwork.bind(this)
     this.addClaim = this.addClaim.bind(this)
+    this.removeClaim = this.removeClaim.bind(this)
     this.handleError = this.handleError.bind(this)
+    this.updateBalance = this.updateBalance.bind(this)
   }
 
   updateClicks() {
@@ -66,6 +71,32 @@ class App extends React.Component {
           })
         }
       })
+    }
+  }
+
+  async updateBalance() {
+    try {
+      console.log('updateBalance')
+      if (!this.state.network) {
+        console.debug('Cannot update balance, network not set.')
+        return
+      }
+      console.log('this.state.network:', this.state.network)
+      const { success, clickToken, signer } = await getProvider(this.state.network)
+      if (!success || !signer) {
+        console.log('returning', success, signer)
+        return
+      }
+
+      const address = await signer.getAddress()
+      console.log('address:', address)
+      const tokenBalance = await clickToken.balanceOf(address)
+      console.log(`${address} has a balance of ${tokenBalance}`)
+      this.setState({
+        tokenBalance
+      })
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -149,6 +180,19 @@ class App extends React.Component {
     localStorage.setItem(LOCAL_STORAGE_CLAIMS, JSON.stringify(claims))
   }
 
+  removeClaim(token) {
+    token = remove0xPrefix(token)
+    const claims = {
+      ...this.state.claims
+    }
+    console.log(`delete ${token} from claims`)
+    delete claims[token]
+    console.log('newClaims:', claims)
+    this.setState({
+      claims
+    })
+  }
+
   reset() {
     this.setState({
       clicks: 0,
@@ -169,6 +213,7 @@ class App extends React.Component {
         <div className="header-pad" />
         <TokenButton onClick={this.click} clicking={this.state.clicking} />
         <TokenBalance
+          tokenBalance={this.state.tokenBalance}
           tokens={this.state.clicks}
           toggleRedemption={this.toggleRedemption}
           claims={this.state.claims}
@@ -187,6 +232,7 @@ class App extends React.Component {
           contract={this.state.contract}
           clicks={this.state.clicks}
           addClaim={this.addClaim}
+          removeClaim={this.removeClaim}
           claims={this.state.claims}
           handleError={this.handleError}
           network={this.state.network}
