@@ -19,7 +19,7 @@ from solidbyte.accounts import Accounts
 
 TOKEN_BYTES = 32
 HEX_PATTERN = r'^(0x)?([A-Fa-f0-9]{64})$'
-MIN_CLICK_DURATION = timedelta(milliseconds=500)
+MIN_CLICK_DURATION = timedelta(milliseconds=250)
 KEYSTORE_DIR = Path(
     os.environ.get('ETHEREUM_KEYSTORE', '~/.ethereum/keystore')
 ).expanduser().resolve()
