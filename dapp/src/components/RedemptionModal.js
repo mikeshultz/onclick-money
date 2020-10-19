@@ -145,6 +145,8 @@ class RedemptionModal extends React.Component {
       throw new Error('Transaction failed!')
     } else {
       this.props.removeClaim(token)
+      this.props.close()
+      await this.props.updateBalance()
     }
   }
 

@@ -51,6 +51,7 @@ class App extends React.Component {
     this.toggleFAQ = this.toggleFAQ.bind(this)
     this.toggleDebug = this.toggleDebug.bind(this)
     this.toggleRedemption = this.toggleRedemption.bind(this)
+    this.closeRedemption = this.closeRedemption.bind(this)
     this.changeNetwork = this.changeNetwork.bind(this)
     this.addClaim = this.addClaim.bind(this)
     this.removeClaim = this.removeClaim.bind(this)
@@ -148,6 +149,13 @@ class App extends React.Component {
     ev.preventDefault()
     this.setState({
       showRedemption: !this.state.showRedemption
+    })
+  }
+
+  closeRedemption(ev) {
+    if (ev) ev.preventDefault()
+    this.setState({
+      showRedemption: false
     })
   }
 
@@ -257,11 +265,13 @@ class App extends React.Component {
           clicks={this.state.clicks}
           addClaim={this.addClaim}
           removeClaim={this.removeClaim}
+          updateBalance={this.updateBalance}
           claims={this.state.claims}
           handleWarning={this.handleWarning}
           handleError={this.handleError}
           network={this.state.network}
           reset={this.reset}
+          close={this.closeRedemption}
           />
 
         <ToastContainer
