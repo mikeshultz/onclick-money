@@ -1,5 +1,5 @@
 .nav {
-    position: absolute;
+    max-height: 2rem;
     bottom: 1.5rem;
     margin-left: 1rem;
 }

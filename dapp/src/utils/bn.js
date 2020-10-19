@@ -1,3 +1,7 @@
+import { BigNumber } from 'ethers'
+
+export const ONE_E_18 = BigNumber.from('1000000000000000000')
+
 const ZERO_PATTERN = /^[0]+$/
 const ZERO_END_PATTERN = /([0]+)$/
 
@@ -16,6 +20,9 @@ export function bnToString(b) {
 export function bnToDecimalString(v, decimals=18) {
   const vs = bnToString(v)
   console.log('vs:', vs)
+  if (vs === '0') {
+    return '0'
+  }
   if (vs.length < decimals) {
     return `0.${vs.padStart(decimals, '0')}`
   }

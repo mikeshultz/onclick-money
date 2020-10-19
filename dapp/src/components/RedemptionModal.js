@@ -1,4 +1,5 @@
 import React from 'react'
+import { toast } from 'react-toastify';
 import ethers from 'ethers'
 import AccountSelector from './AccountSelector'
 import ClaimContainer from './ClaimContainer'
@@ -62,25 +63,24 @@ class RedemptionModal extends React.Component {
 
     const amount = VALUES.oneEther.mul(clicks)
 
-    console.log('recipient:', recipient)
+    /*console.log('recipient:', recipient)
     console.log('token:', token)
     console.log('amount:', amount)
-    console.log('signature:', signature)
+    console.log('signature:', signature)*/
 
     const contractAddress = CONTRACTS[this.props.network]
 
-    console.log('contractAddress:', contractAddress)
+    //console.log('contractAddress:', contractAddress)
 
     const checkHash = ethers.utils.solidityKeccak256(
       ['address', 'bytes32', 'uint256', 'address'],
       [recipient, token, amount, contractAddress]
     )
     // Try and validate the claim before sending a tx
-    console.log('ClickToken address: ', this.wallet.clickToken.address)
-    console.log('expected address: ', contractAddress)
     const hash = await this.wallet.clickToken.hashClaim(recipient, token, amount)
-    console.log('hash:', hash)
-    console.log('checkHash:', checkHash)
+    
+    /*console.log('hash:', hash)
+    console.log('checkHash:', checkHash)*/
 
     console.debug(`Hash verification: ${hash} === ${checkHash} === ${hash === checkHash}`)
 
@@ -90,11 +90,13 @@ class RedemptionModal extends React.Component {
 
     const recoveredSigner = await this.wallet.clickToken.checkClaim(hash, signature)
 
-    console.debug(`Recovered signer: ${recoveredSigner}`)
+    //console.debug(`Recovered signer: ${recoveredSigner}`)
 
     //if (!recoveredSigner) {
-    if (recoveredSigner !== '0xc19FdD3ec293072eD78e7b2b25c4F9CD3d459a97') {
-      throw new Error('Claim failed validation check.  Invalid signature?')
+    if (recoveredSigner !== '0x778982bde8507f78713feccf2a16a99f4abf3539') {
+      const errMsg = 'Claim failed validation check.  Invalid signature?'
+      toast.error(errMsg)
+      throw new Error(errMsg)
     }
 
     // claim(address,bytes32,uint256,bytes)
@@ -112,10 +114,9 @@ class RedemptionModal extends React.Component {
       }
 
       if (msg.includes('already-claimed')) {
-        this.props.handleError(new Error('Claim already redeemed!'))
+        this.props.handleWarning('Claim already redeemed!')
         this.props.removeClaim(token)
       } else {
-        console.error(err)
         this.props.handleError(err)
       }
 
@@ -124,8 +125,10 @@ class RedemptionModal extends React.Component {
 
     // TODO: needs better UX
     const receipt = await tx.wait()
+
     console.debug(tx)
     console.debug(receipt)
+
     if (!receipt.status) {
       throw new Error('Transaction failed!')
     } else {

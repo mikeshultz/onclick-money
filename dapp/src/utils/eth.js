@@ -24,8 +24,7 @@ export const VALUES = {
   oneEther: ethers.BigNumber.from('1000000000000000000')
 }
 
-let _cached_provider,
-    _cached_signer
+let _cached_provider = {}
 
 async function httpGetBlock(endpoint) {
   const res = await fetch(endpoint, {
@@ -58,30 +57,35 @@ async function localNodeAvailable() {
 
 // TODO: Leverage caching, and double check network
 export async function getProvider(networkId) {
+  if (typeof _cached_provider[networkId] !== 'undefined') {
+    return _cached_provider[networkId]
+  }
+
   let accounts = []
+  let provider
 
   if (window.ethereum) {
-    _cached_provider = new ethers.providers.Web3Provider(window.ethereum)
+    provider = new ethers.providers.Web3Provider(window.ethereum)
     /*if (window.ethereum.isMetaMask) {
       window.ethereum.request({ method: 'eth_requestAccounts' })
     }*/
   } else {
     if (await localNodeAvailable()) {
-      _cached_provider = new ethers.providers.JsonRpcProvider(LOCLA_NODE_ENDPOINT)
+      provider = new ethers.providers.JsonRpcProvider(LOCLA_NODE_ENDPOINT)
     } else {
-      _cached_provider = ethers.getDefaultProvider(networkId)
+      provider = ethers.getDefaultProvider(networkId)
     }
   }
 
-  _cached_signer = _cached_provider.getSigner()
+  const signer = provider.getSigner()
 
   // Check network
-  const network = await _cached_provider.getNetwork()
+  const network = await provider.getNetwork()
   let chainId = network.chainId
 
   // Mostly to deal with ganache and weird networks/clients
   if (chainId > 1000) {
-    const netVersionRes = await _cached_provider.send('net_version', [])
+    const netVersionRes = await provider.send('net_version', [])
     if (netVersionRes !== chainId) {
       chainId = netVersionRes
     }
@@ -89,7 +93,7 @@ export async function getProvider(networkId) {
 
   if (Number(chainId) !== Number(networkId)) {
     return {
-      provider: _cached_provider,
+      provider,
       accounts: [],
       success: false,
       error: `Invalid network. Node is connected to ${chainId}, we want ${networkId}`
@@ -101,24 +105,25 @@ export async function getProvider(networkId) {
     accounts = await window.ethereum.request({method: 'eth_requestAccounts'})
   } else {
     // TODO: Does ethers.js not support eth_accounts?
-    accounts.append(await _cached_signer.getAddress())
+    accounts.append(await signer.getAddress())
   }
 
   // Contracts
   const clickToken = new ethers.Contract(
     CONTRACTS[chainId],
     CLICK_TOKEN_ABI,
-    _cached_signer
+    signer
   )
 
   console.debug('Token:', clickToken)
 
-  return {
-    provider: _cached_provider,
-    signer: _cached_signer,
+  _cached_provider[networkId] = {
+    provider,
+    signer,
     accounts,
     clickToken,
     success: true,
     error: null
   }
+  return _cached_provider[networkId]
 }

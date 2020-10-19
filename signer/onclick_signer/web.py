@@ -23,7 +23,6 @@ MIN_CLICK_DURATION = timedelta(milliseconds=250)
 KEYSTORE_DIR = Path(
     os.environ.get('ETHEREUM_KEYSTORE', '~/.ethereum/keystore')
 ).expanduser().resolve()
-ENCRYPTION_PASSPHRASE = os.environ.get('ENCRYPTION_PASSPHRASE')
 
 _cached_redis = None
 # in-memory click tracking
@@ -192,7 +191,7 @@ class ClaimHandler(JSONRequestHandler):
         self.accounts = Accounts(keystore_dir=os.environ.get('ETHEREUM_KEYSTORE'))
 
         stored_accounts = self.accounts.get_accounts()
-        passphrase = ENCRYPTION_PASSPHRASE
+        passphrase = os.environ.get('ENCRYPTION_PASSPHRASE')
         account = None
 
         if not passphrase:

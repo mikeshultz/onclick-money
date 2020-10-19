@@ -1,0 +1,4 @@
+.primary-card {}
+.primary-card.clickable {
+    cursor: pointer;
+}

@@ -1,12 +1,14 @@
 import React from 'react'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Container, CssBaseline } from '@material-ui/core'
 
 import Header from './components/Header'
 import TokenButton from './components/TokenButton'
 import TokenBalance from './components/TokenBalance'
 import Footer from './components/Footer'
 import FAQModal from './components/FAQModal'
+import DebugModal from './components/DebugModal'
 import RedemptionModal from './components/RedemptionModal'
 import { getClicks, sendClick } from './utils/clicks'
 import { DEFAULT_NETWORK, NETWORKS, CONTRACTS, getProvider } from './utils/eth'
@@ -28,9 +30,6 @@ class App extends React.Component {
     const network = storedNetwork ? storedNetwork : DEFAULT_NETWORK
     const contract = network in CONTRACTS ? CONTRACTS[network] : CONTRACTS['1']
 
-    console.log('network:', network)
-    console.log('contract:', contract)
-
     this.state = {
       network,
       contract,
@@ -39,23 +38,23 @@ class App extends React.Component {
       clicks: 0,
       tokenBalance: 0,
       showFAQ: false,
+      showDebug: false,
       showRedemption: false,
       claims: storedClaims ? JSON.parse(storedClaims) : {},
     }
-
-    console.log('loaded claims: ', this.state.claims)
 
     this.updateClicks()
     this.updateBalance()
 
     this.click = this.click.bind(this)
-    this.redeem = this.redeem.bind(this)
     this.reset = this.reset.bind(this)
     this.toggleFAQ = this.toggleFAQ.bind(this)
+    this.toggleDebug = this.toggleDebug.bind(this)
     this.toggleRedemption = this.toggleRedemption.bind(this)
     this.changeNetwork = this.changeNetwork.bind(this)
     this.addClaim = this.addClaim.bind(this)
     this.removeClaim = this.removeClaim.bind(this)
+    this.handleWarning = this.handleWarning.bind(this)
     this.handleError = this.handleError.bind(this)
     this.updateBalance = this.updateBalance.bind(this)
   }
@@ -76,12 +75,11 @@ class App extends React.Component {
 
   async updateBalance() {
     try {
-      console.log('updateBalance')
       if (!this.state.network) {
         console.debug('Cannot update balance, network not set.')
         return
       }
-      console.log('this.state.network:', this.state.network)
+
       const { success, clickToken, signer } = await getProvider(this.state.network)
       if (!success || !signer) {
         console.log('returning', success, signer)
@@ -89,9 +87,11 @@ class App extends React.Component {
       }
 
       const address = await signer.getAddress()
-      console.log('address:', address)
+
       const tokenBalance = await clickToken.balanceOf(address)
+
       console.log(`${address} has a balance of ${tokenBalance}`)
+
       this.setState({
         tokenBalance
       })
@@ -130,15 +130,17 @@ class App extends React.Component {
     })
   }
 
-  redeem(ev) {
-    ev.preventDefault()
-    console.log('open redemption modal')
-  }
-
   toggleFAQ(ev) {
     ev.preventDefault()
     this.setState({
       showFAQ: !this.state.showFAQ
+    })
+  }
+
+  toggleDebug(ev) {
+    ev.preventDefault()
+    this.setState({
+      showDebug: !this.state.showDebug
     })
   }
 
@@ -168,15 +170,15 @@ class App extends React.Component {
   }
 
   addClaim(token, claim) {
-    console.log('addClaim:', claim)
     const claims = {
       ...this.state.claims,
       [token]: claim
     }
-    console.log('claims:', claims)
+
     this.setState({
       claims
     })
+
     localStorage.setItem(LOCAL_STORAGE_CLAIMS, JSON.stringify(claims))
   }
 
@@ -185,12 +187,16 @@ class App extends React.Component {
     const claims = {
       ...this.state.claims
     }
-    console.log(`delete ${token} from claims`)
+
+    console.debug(`delete ${token} from claims`)
+
     delete claims[token]
-    console.log('newClaims:', claims)
+
     this.setState({
       claims
     })
+
+    localStorage.setItem(LOCAL_STORAGE_CLAIMS, JSON.stringify(claims))
   }
 
   reset() {
@@ -203,12 +209,18 @@ class App extends React.Component {
 
   handleError(err) {
     console.error(err)
-    toast(err.message)
+    toast.error(err.message)
+  }
+
+  handleWarning(msg) {
+    console.warn(msg)
+    toast.warn(msg)
   }
 
   render() {
     return (
-      <div className="app-container">
+      <Container className="app-container">
+        <CssBaseline />
         <Header network={this.state.network} onNetworkChange={this.changeNetwork} />
         <div className="header-pad" />
         <TokenButton onClick={this.click} clicking={this.state.clicking} />
@@ -218,11 +230,17 @@ class App extends React.Component {
           toggleRedemption={this.toggleRedemption}
           claims={this.state.claims}
           />
-        <Footer toggleFAQ={this.toggleFAQ} toggleRedemption={this.toggleRedemption} />
+        <Footer toggleFAQ={this.toggleFAQ} toggleDebug={this.toggleDebug} toggleRedemption={this.toggleRedemption} />
 
         <FAQModal
           className={this.state.showFAQ ? '' : 'hide'}
           toggleFAQ={this.toggleFAQ}
+          />
+
+        <DebugModal
+          className={this.state.showDebug ? '' : 'hide'}
+          toggleDebug={this.toggleDebug}
+          network={this.state.network}
           />
 
         <RedemptionModal
@@ -234,13 +252,18 @@ class App extends React.Component {
           addClaim={this.addClaim}
           removeClaim={this.removeClaim}
           claims={this.state.claims}
+          handleWarning={this.handleWarning}
           handleError={this.handleError}
           network={this.state.network}
           reset={this.reset}
           />
 
-        <ToastContainer position="bottom-right" newestOnTop={true} />
-      </div>
+        <ToastContainer
+          position="bottom-right"
+          newestOnTop={true}
+          autoClose={15000}
+          />
+      </Container>
     )
   }
 }

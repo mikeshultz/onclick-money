@@ -1,0 +1,20 @@
+{
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module",
+        "ecmaFeatures": {
+            "jsx": true
+        }
+    },
+    "extends": [
+        "plugin:prettier/recommended",
+        "plugin:react/recommended"
+    ],
+    "rules": {
+        "no-undef": "error",
+        "semi": "off",
+        "no-unused-expressions": "error",
+        "no-unused-vars": "error",
+        "react/prop-types": "off"
+    }
+}
