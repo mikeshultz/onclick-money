@@ -26,6 +26,7 @@ class RedemptionModal extends React.Component {
 
     this.state = {
       generating: false,
+      sendingClaim: false,
       state: null,
       display: {},
       accounts: [],
@@ -52,12 +53,19 @@ class RedemptionModal extends React.Component {
   generateClaim(ev) {
     ev.preventDefault()
 
+    this.setState({
+      generating: true
+    })
+
     getClaim(
       this.props.token,
       this.state.recipient,
       this.props.contract
     ).then(res => {
       console.debug('Generated claim:', res)
+      this.setState({
+        generating: false
+      })
       this.props.addClaim(this.props.token, res)
       this.props.reset()
     })
@@ -70,6 +78,10 @@ class RedemptionModal extends React.Component {
     require(token, "Missing token")
     require(clicks, "Missing clicks")
     require(signature, "Missing signature")
+
+    this.setState({
+      sendingClaim: true
+    })
 
     const amount = VALUES.oneEther.mul(clicks)
 
@@ -106,6 +118,11 @@ class RedemptionModal extends React.Component {
     if (!SIGNERS[this.props.network].includes(recoveredSigner)) {
       const errMsg = 'Claim failed validation check.  Invalid signature?'
       toast.error(errMsg)
+
+      this.setState({
+        sendingClaim: false
+      })
+
       throw new Error(errMsg)
     }
 
@@ -132,6 +149,10 @@ class RedemptionModal extends React.Component {
         this.props.handleError(err)
       }
 
+      this.setState({
+        sendingClaim: false
+      })
+
       return
     }
 
@@ -140,6 +161,10 @@ class RedemptionModal extends React.Component {
 
     console.debug(tx)
     console.debug(receipt)
+
+    this.setState({
+      sendingClaim: false
+    })
 
     if (!receipt.status) {
       throw new Error('Transaction failed!')
@@ -198,9 +223,8 @@ class RedemptionModal extends React.Component {
   }
 
   render() {
-    const { sendingClaim } = this.state
-    const { toggleFAQ, className, generating, clicks, claims } = this.props
-    const sendClaim = this.sendClaim
+    const { sendingClaim, generating } = this.state
+    const { toggleFAQ, className, clicks, claims } = this.props
     const claimChildren = Object.keys(claims).map(k => {
       const net = NET_BY_CONTRACT[claims[k].contract]
       return (
@@ -213,8 +237,8 @@ class RedemptionModal extends React.Component {
               <ButtonGroup>
                 <Button
                   variant="contained"
-                  className={sendingClaim ? 'loader loader-small' : ''}
                   color="primary"
+                  className="button-width-10rem"
                   onClick={() => {
                     this.sendClaim(
                       this.state.recipient,
@@ -224,7 +248,13 @@ class RedemptionModal extends React.Component {
                     )
                   }}
                 >
-                  Send Claim
+                  {sendingClaim ?
+                    (
+                      <div className="loader loader-small" />
+                    ) : (
+                      <span>Send Claim</span>
+                    )
+                  }
                 </Button>
 
                 <Button
@@ -272,10 +302,16 @@ class RedemptionModal extends React.Component {
                   <Button
                     variant="contained"
                     color="primary"
-                    className={generating ? 'loader loader-small' : ''}
+                    className="button-width-10rem"
                     onClick={this.generateClaim}
                   >
-                    Generate Claim
+                    {generating ?
+                      (
+                        <div className="loader loader-small" />
+                      ) : (
+                        <span>Generate Claim</span>
+                      )
+                    }
                   </Button>
                 </p>
               </>

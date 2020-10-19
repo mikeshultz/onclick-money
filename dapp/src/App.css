@@ -27,6 +27,18 @@ button:active {
     margin-right: 1rem;
 }
 
+.button-width-7rem {
+  width: 7rem;
+}
+
+.button-width-10rem {
+  width: 10rem;
+}
+
+.button-width-15rem {
+  width: 15rem;
+}
+
 a,
 a:link,
 a:visited,
