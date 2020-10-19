@@ -27,14 +27,18 @@
     border-bottom: 1px #000 solid;
 }
 .redemption-modal table.claims tbody tr {}
-.redemption-modal table.claims tbody tr td {
-    font-size: 1.75rem;
+
+@media (min-width: 600px) {
+    .redemption-modal table.claims tbody tr td {
+        font-size: 1.75rem;
+    }
 }
+
 .redemption-modal table.claims tbody tr td button {
-    border-radius: 0.5rem;
+    /*border-radius: 0.5rem;
     padding: 0.75rem;
     height: 2.5rem;
-    line-height: 1rem;
+    line-height: 1rem;*/
 }
 
 .redemption-modal table.claims tbody tr.claim-display {}

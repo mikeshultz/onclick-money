@@ -9,8 +9,12 @@ export const NETWORKS = {
 }
 // TODO: Load from metafile?
 export const CONTRACTS = {
-  '1': '0x4185c4aeb90d93da5b3bb865947e40ea7a192d21',
+  '1': '0x4185c4AeB90D93da5B3bb865947E40ea7a192D21',
   '1337': '0x4185c4AeB90D93da5B3bb865947E40ea7a192D21',
+}
+export const SIGNERS = {
+  '1': ['0xA3202339Ca16B4B933b13b2821069bC67f17Ce5c'],
+  '1337': ['0x778982bde8507f78713feccf2a16a99f4abf3539', '0x59f58608Da7a8CCF1a6dd30a497BE234A460Cc22']
 }
 export const NET_BY_CONTRACT = Object.keys(
   CONTRACTS

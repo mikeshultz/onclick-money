@@ -1,11 +1,21 @@
 import React from 'react'
 import { toast } from 'react-toastify';
+import { Button, ButtonGroup } from '@material-ui/core'
+import { DataGrid } from '@material-ui/data-grid'
 import ethers from 'ethers'
+
 import AccountSelector from './AccountSelector'
 import ClaimContainer from './ClaimContainer'
 import { truncateToken, add0xPrefix } from '../utils/hex'
 import { getClaim, packClaim, unpackClaim } from '../utils/claim'
-import { NETWORKS, NET_BY_CONTRACT, CONTRACTS, VALUES, getProvider } from '../utils/eth'
+import {
+  NETWORKS,
+  NET_BY_CONTRACT,
+  CONTRACTS,
+  VALUES,
+  SIGNERS,
+  getProvider
+} from '../utils/eth'
 import { require } from '../utils/validation'
 
 import './RedemptionModal.css'
@@ -90,10 +100,10 @@ class RedemptionModal extends React.Component {
 
     const recoveredSigner = await this.wallet.clickToken.checkClaim(hash, signature)
 
-    //console.debug(`Recovered signer: ${recoveredSigner}`)
+    console.debug('recoveredSigner:', recoveredSigner)
+    console.debug('signers:', SIGNERS[this.props.network])
 
-    //if (!recoveredSigner) {
-    if (recoveredSigner !== '0x778982bde8507f78713feccf2a16a99f4abf3539') {
+    if (!SIGNERS[this.props.network].includes(recoveredSigner)) {
       const errMsg = 'Claim failed validation check.  Invalid signature?'
       toast.error(errMsg)
       throw new Error(errMsg)
@@ -186,35 +196,41 @@ class RedemptionModal extends React.Component {
   render() {
     const { sendingClaim } = this.state
     const { toggleFAQ, className, generating, clicks, claims } = this.props
+    const sendClaim = this.sendClaim
     const claimChildren = Object.keys(claims).map(k => {
       const net = NET_BY_CONTRACT[claims[k].contract]
       return (
         <React.Fragment key={k}>
           <tr className="claim">
-            <td>{truncateToken(claims[k].token)}</td>
-            <td>{claims[k].clicks} CLIK</td>
-            <td>{NETWORKS[net]}</td>
+            <td onClick={() => this.toggleDisplay(k)}>{truncateToken(claims[k].token)}</td>
+            <td onClick={() => this.toggleDisplay(k)}>{claims[k].clicks} CLIK</td>
+            <td onClick={() => this.toggleDisplay(k)}>{NETWORKS[net]}</td>
             <td>
-              <div className="button-group">
-                <button className={`send-claim ${
-                    sendingClaim ? 'loader loader-small' : ''
-                }`} onClick={() => {
-                  this.sendClaim(
-                    this.state.recipient,
-                    claims[k].token,
-                    claims[k].clicks,
-                    claims[k].signature
-                  )
-                }}>
-                    Send Claim
-                </button>
-                <button
-                  className={`save-claim`}
+              <ButtonGroup>
+                <Button
+                  variant="contained"
+                  className={sendingClaim ? 'loader loader-small' : ''}
+                  color="primary"
+                  onClick={() => {
+                    this.sendClaim(
+                      this.state.recipient,
+                      claims[k].token,
+                      claims[k].clicks,
+                      claims[k].signature
+                    )
+                  }}
+                >
+                  Send Claim
+                </Button>
+
+                <Button
+                  variant="contained"
+                  className="hide-mobile"
                   onClick={() => this.toggleDisplay(k)}
-                  >
-                    {this.state.display[k] ? 'Hide' : 'Show'} Claim
-                </button>
-              </div>
+                >
+                  {this.state.display[k] ? 'Hide' : 'Show'} Claim
+                </Button>
+              </ButtonGroup>
             </td>
           </tr>
           <tr
@@ -249,11 +265,14 @@ class RedemptionModal extends React.Component {
                   onAccountChange={this.changeAccount}
                   />
                 <p>
-                  <button className={`generate-claim ${
-                      generating ? 'loader loader-small' : ''
-                  }`} onClick={this.generateClaim}>
-                      Generate Claim
-                  </button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    className={generating ? 'loader loader-small' : ''}
+                    onClick={this.generateClaim}
+                  >
+                    Generate Claim
+                  </Button>
                 </p>
               </>
             ) : null
@@ -295,21 +314,23 @@ class RedemptionModal extends React.Component {
                   value={this.state.claimToLoad}
                   onChange={this.changeClaimToLoad}
                   />
-                <button
-                  className="load-claim"
+                <Button
+                  variant="contained"
+                  color="primary"
                   onClick={this.loadClaim}
-                  >
+                >
                   Load
-                </button>
+                </Button>
               </div>
             </>
           ) : (
-            <button
-              className="load-claim"
+            <Button
+              variant="contained"
+              color="primary"
               onClick={() => this.toggleDisplay('claimLoadForm')}
-              >
+            >
               Load Saved Claim
-            </button>
+            </Button>
           )}
         </div>
       </div>
