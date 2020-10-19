@@ -114,7 +114,9 @@ class RedemptionModal extends React.Component {
 
     let tx
     try {
-      tx = await method(recipient, token, amount, signature)
+      tx = await method(recipient, token, amount, signature, {
+        gasLimit: 90000
+      })
     } catch (err) {
       let msg = err.toString()
 
