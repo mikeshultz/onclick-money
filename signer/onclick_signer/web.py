@@ -113,7 +113,7 @@ class ClickHandler(JSONRequestHandler):
         clicks = 0
 
         # No concurrent requests
-        if not token:
+        if token is not None:
             if _token_lock.get(token):
                 log.warning('Token locked: {}'.format(token))
                 self.write_json({
