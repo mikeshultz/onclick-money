@@ -2,14 +2,14 @@ import { ethers } from "ethers"
 
 const LOCLA_NODE_ENDPOINT = 'http://localhost:8545'
 
-export const DEFAULT_NETWORK = 4
+export const DEFAULT_NETWORK = 1
 export const NETWORKS = {
-  '4': 'rikeby',
+  '1': 'mainnet',
   '1337': 'ganache'
 }
 // TODO: Load from metafile?
 export const CONTRACTS = {
-  '4': null,
+  '1': '0x4185c4aeb90d93da5b3bb865947e40ea7a192d21',
   '1337': '0x4185c4AeB90D93da5B3bb865947E40ea7a192D21',
 }
 export const NET_BY_CONTRACT = Object.keys(
