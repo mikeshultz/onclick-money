@@ -221,7 +221,13 @@ class App extends React.Component {
     return (
       <Container className="app-container">
         <CssBaseline />
-        <Header network={this.state.network} onNetworkChange={this.changeNetwork} />
+        {process.env.NODE_ENV !== 'production' ?
+          (
+            <Header
+              network={this.state.network}
+              onNetworkChange={this.changeNetwork}
+            />
+          ) : null}
         <div className="header-pad" />
         <TokenButton onClick={this.click} clicking={this.state.clicking} />
         <TokenBalance
